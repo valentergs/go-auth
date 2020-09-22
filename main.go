@@ -3,10 +3,8 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha512"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -59,7 +57,7 @@ func main() {
 	// http.HandleFunc("/decode", bar)
 	// http.ListenAndServe(":8080", nil)
 
-	pass := "123456789"
+	pass := "Rodrigo Valente"
 
 	hashedPass, err := hashPassword(pass)
 	if err != nil {
@@ -71,30 +69,31 @@ func main() {
 		log.Fatalln("Not allowed...")
 	}
 
-	log.Println(hashedPass)
+	log.Println(string(hashedPass))
 	log.Println(("Logged in!"))
+	log.Println(signMessage(hashedPass))
 }
 
-func foo(w http.ResponseWriter, r *http.Request) {
-	p1 := person{
-		Nome: "Rodrigo",
-	}
+// func foo(w http.ResponseWriter, r *http.Request) {
+// 	p1 := person{
+// 		Nome: "Rodrigo",
+// 	}
 
-	err := json.NewEncoder(w).Encode(p1)
-	if err != nil {
-		log.Println("Encoded bad data")
-	}
-}
+// 	err := json.NewEncoder(w).Encode(p1)
+// 	if err != nil {
+// 		log.Println("Encoded bad data")
+// 	}
+// }
 
-func bar(w http.ResponseWriter, r *http.Request) {
-	var p1 person
-	err := json.NewDecoder(r.Body).Decode(&p1)
-	if err != nil {
-		log.Println("Decoded bad data")
-	}
+// func bar(w http.ResponseWriter, r *http.Request) {
+// 	var p1 person
+// 	err := json.NewDecoder(r.Body).Decode(&p1)
+// 	if err != nil {
+// 		log.Println("Decoded bad data")
+// 	}
 
-	log.Println("Pessoa:", p1)
-}
+// 	log.Println("Pessoa:", p1)
+// }
 
 func hashPassword(password string) ([]byte, error) {
 	bs, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -128,7 +127,7 @@ func checkSig(msg, sig []byte) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("Error in checkSig while getting signature of message: %w", err)
 
-		same := hmac.Equal(newSig, sig)
-		return same, nil
 	}
+	same := hmac.Equal(newSig, sig)
+	return same, nil
 }
