@@ -1,31 +1,45 @@
 package main
 
 import (
-	"crypto/sha256"
-	"fmt"
+	"io"
+	"net/http"
 )
 
 func main() {
+	http.HandleFunc("/", foo)
+	http.ListenAndServe(":8080", nil)
+}
 
-	// FROM FILE
-	// f, err := os.Open("somefile.txt")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+func foo(w http.ResponseWriter, r *http.Request) {
+	html := `
+	<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HAC Example</title>
+  </head>
+  <body>
+    <h1>HMAC Example</h1>
+    <form action="/submit" method="post">
+      <input type="email" name="email" />
+      <input type="submit" />
+    </form>
+  </body>
+</html>
+	`
+	io.WriteString(w, html)
+}
 
-	// defer f.Close()
+func bar(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
-	// h := sha256.New()
-	// if _, err := io.Copy(h, f); err != nil {
-	// 	log.Fatal(err)
-	// }
+	email := r.FormValue("email")
+	if email == "" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
 
-	// //fmt.Printf("%T\", f)
-	// fmt.Printf("%T\n", h.Sum(nil))
-	// //fmt.Println(len(h.Sum(nil)))
-
-	// FROM STRING
-	h := sha256.New()
-	h.Write([]byte("RodrigoValente"))
-	fmt.Printf("%x\n", h.Sum(nil))
 }
