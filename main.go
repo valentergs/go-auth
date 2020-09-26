@@ -1,25 +1,22 @@
 package main
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	"fmt"
-	"io"
 	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
+var db = map[string][]byte{}
+
 func main() {
-	http.HandleFunc("/", foo)
-	http.HandleFunc("/submit", bar)
+	http.HandleFunc("/", index)
+	http.HandleFunc("/register", register)
+	http.HandleFunc("/login", login)
 	http.ListenAndServe(":8080", nil)
 }
 
-func foo(w http.ResponseWriter, r *http.Request) {
-
-	c, err := r.Cookie("session")
-	if err != nil {
-		c = &http.Cookie{}
-	}
+func index(w http.ResponseWriter, r *http.Request) {
 
 	html := `
 	<!DOCTYPE html>
@@ -27,46 +24,60 @@ func foo(w http.ResponseWriter, r *http.Request) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HAC Example</title>
+    <title>JWT Example</title>
   </head>
   <body>
-    <h1>HMAC Example</h1>
-    <form action="/submit" method="post">
+    <h1>JWT Example</h1>
+    <h4>Login page</h4>
+    <form action="/login" method="POST">
       <input type="email" name="email" />
-	  <input type="submit" />
-	  <p>Cookie: ` + c.Value + `</p>
+      <input type="password" name="password" />
+      <input type="submit" />
     </form>
+
+    <p>Not registered yet? <a href="/">Click here</a></p>
   </body>
 </html>
 	`
-	io.WriteString(w, html)
+	fmt.Fprint(w, html)
 }
 
-func bar(w http.ResponseWriter, r *http.Request) {
+func register(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
+		http.Redirect(w, r, "/", 303)
+		fmt.Println("Wrong Request method!")
 	}
 
-	email := r.FormValue("email")
-	if email == "" {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+	e := r.FormValue("email")
+	p := r.FormValue("password")
+
+	senhaCripto, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Erro de servidor", http.StatusInternalServerError)
 	}
+	db[p] = senhaCripto
+	fmt.Println(string(senhaCripto), e)
 
-	code := getCode(email)
-
-	// hash + "stored value"
-	c := http.Cookie{
-		Name:  "session",
-		Value: code + "|" + email,
-	}
-
-	http.SetCookie(w, &c)
 	http.Redirect(w, r, "/", 303)
 }
 
-func getCode(msg string) string {
-	h := hmac.New(sha256.New, []byte("somekey"))
-	h.Write([]byte(msg))
-	return fmt.Sprintf("%x", h.Sum(nil))
+func login(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/", 303)
+		fmt.Println("Wrong Request method!")
+	}
+
+	e := r.FormValue("email")
+	p := r.FormValue("password")
+
+	senhaCripto, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Erro de servidor", http.StatusInternalServerError)
+	}
+	db[p] = senhaCripto
+	fmt.Println(string(senhaCripto), e)
+
+	http.Redirect(w, r, "/", 303)
 }
